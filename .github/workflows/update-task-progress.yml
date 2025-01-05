@@ -12,7 +12,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Authentication step is removed because GH_TOKEN is already set in the environment
+      # Authentication step added to set GH_TOKEN explicitly
+      - name: Authenticate GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | gh auth login --with-token
+
       - name: Debug environment
         run: |
           echo "Checking GH_TOKEN environment variable..."
@@ -50,6 +56,8 @@ jobs:
 
       - name: Update the issue with progress
         if: env.progress != '' # No 'env' block needed
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           PROGRESS="${{ env.progress }}"
           # Fetch the existing issue body
