@@ -62,7 +62,8 @@ jobs:
         run: |
           # Use calculated progress and task counts
           PROGRESS="${{ env.progress }}"
-                     # Fetch current labels
+                 
+          # Fetch current labels as an array of names
           CURRENT_LABELS=$(gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} --jq '[.labels[].name]')
           echo "Current Labels: $CURRENT_LABELS"
 
@@ -72,10 +73,10 @@ jobs:
 
           # Add the new progress label
           UPDATED_LABELS=$(echo "$FILTERED_LABELS" | jq ". += [\"Progress: $PROGRESS%\"]")
-          echo "Updated Labels: $UPDATED_LABELS"
+          echo "Updated Labels JSON: $UPDATED_LABELS"
 
-          # Update the labels using GitHub API
-          gh api repos/${{github.repository }}/issues/${{ github.event.issue.number }} \
+          # Update the labels using GitHub API (ensure the output is valid JSON)
+          gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} \
           --method PATCH \
-          --field labels="$UPDATED_LABELS"
+          --field labels="$(echo $UPDATED_LABELS)"
    
