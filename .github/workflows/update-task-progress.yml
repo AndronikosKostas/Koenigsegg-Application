@@ -28,7 +28,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           # Extract the issue body
-          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --json body --jq '.body')
+          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
           echo "Issue Body: $ISSUE_BODY"
 
           # Count tasks
@@ -55,16 +55,16 @@ jobs:
           echo "completed=$COMPLETED_TASKS" >> $GITHUB_ENV
           echo "total=$TOTAL_TASKS" >> $GITHUB_ENV
 
-      - name: Update the issue labels with progress
+      - name: Update the issue title with progress
         if: env.progress != ''
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # Use calculated progress
+          # Use calculated progress and task counts
           PROGRESS="${{ env.progress }}"
-
+                 
           # Fetch current labels as an array of names
-          CURRENT_LABELS=$(gh api repos/${{github.repository}}/issues/${{github.event.issue.number}} --json labels --jq '[.labels[].name]')
+          CURRENT_LABELS=$(gh api repos/${{github.repository}}/issues/${{github.event.issue.number}} --jq '[.labels[].name]')
           echo "Current Labels: $CURRENT_LABELS"
 
           # Identify old progress labels
@@ -87,8 +87,3 @@ jobs:
           eval gh issue edit ${{github.event.issue.number}} \
             $REMOVE_LABELS_STR \
             --add-label "\"$ADD_LABEL\""
-
-      - name: Update progress label color
-        run: |
-          PROGRESS_LABEL="Progress: ${{ env.progress }}%"
-          gh label edit "$PROGRESS_LABEL" --color 1E90FF || gh label create "$PROGRESS_LABEL" --color 1E90FF
