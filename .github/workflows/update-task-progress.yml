@@ -12,18 +12,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Authenticate GitHub CLI
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          echo "$GH_TOKEN" | gh auth login --with-token
-
+      # Authentication step is removed because GH_TOKEN is already set in the environment
       - name: Debug environment
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           echo "Checking GH_TOKEN environment variable..."
-          if [ -z "$GH_TOKEN" ]; then
+          if [ -z "${{ secrets.GH_TOKEN }}" ]; then
             echo "Error: GH_TOKEN is not set."
             exit 1
           else
