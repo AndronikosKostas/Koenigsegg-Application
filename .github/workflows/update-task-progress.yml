@@ -70,6 +70,15 @@ jobs:
           # Define new progress label
           ADD_LABEL="Progress: $PROGRESS%"
 
+          # Check if the label already exists in the repository
+          LABEL_EXISTS=$(gh api repos/${{github.repository}}/labels --jq ".[] | select(.name == \"$ADD_LABEL\")")
+          if [ -z "$LABEL_EXISTS" ]; then
+            echo "Label does not exist. Creating it..."
+            gh api repos/${{github.repository}}/labels --method POST --field name="$ADD_LABEL" --field color="1E90FF"
+          else
+            echo "Label already exists."
+          fi
+
           # Prepare remove labels command
           REMOVE_LABELS_STR=""
           if [ -n "$OLD_PROGRESS_LABELS" ]; then
