@@ -53,7 +53,7 @@ jobs:
           echo "Progress: $PROGRESS%"
           echo "::set-output name=progress::$PROGRESS"
           
-      - name: Update the issue with progress
+           - name: Update the issue with progress
         if: steps.calculate-progress.outputs.progress != ''
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -70,10 +70,10 @@ jobs:
           UPDATED_BODY="## Progress: $PROGRESS%\n\n$CLEANED_BODY"
 
           # Debug log for the updated issue body
-          echo "Updated Issue Body: $UPDATED_BODY"
+          echo "Updated Issue Body:"
+          echo "$UPDATED_BODY"
 
-          # Update the issue
+          # Update the issue with correctly formatted body
           gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
             --method PATCH \
-            --field body="$UPDATED_BODY"
-
+            --field body="$(echo -e "$UPDATED_BODY")"
