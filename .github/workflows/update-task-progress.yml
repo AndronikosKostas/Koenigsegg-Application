@@ -75,8 +75,8 @@ jobs:
           UPDATED_LABELS=$(echo "$FILTERED_LABELS" | jq ". += [\"Progress: $PROGRESS%\"]")
           echo "Updated Labels JSON: $UPDATED_LABELS"
 
-          # Update the labels using GitHub API (ensure the output is valid JSON)
+          # Update the labels using GitHub API with --json flag
           gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} \
           --method PATCH \
-          --field labels="$(echo $UPDATED_LABELS)"
+          --json labels="$(echo $UPDATED_LABELS)"
    
