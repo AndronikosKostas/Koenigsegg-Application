@@ -68,15 +68,16 @@ jobs:
           echo "Current Labels: $CURRENT_LABELS"
 
           # Remove old progress labels, if any
-          FILTERED_LABELS=$(echo "$CURRENT_LABELS" | jq '[.[] | select(test("Progress: [0-9]+%") | not)]')
+          FILTERED_LABELS=$(echo "$CURRENT_LABELS" | jq '[.[] | select(test("^Progress: [0-9]+%") | not)]')
           echo "Filtered Labels: $FILTERED_LABELS"
 
           # Add the new progress label
           UPDATED_LABELS=$(echo "$FILTERED_LABELS" | jq ". += [\"Progress: $PROGRESS%\"]")
           echo "Updated Labels JSON: $UPDATED_LABELS"
 
-          # Update the labels using GitHub API 
+          # Update the labels using GitHub API
           gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} \
           --method PATCH \
-          --field labels[]="Progress: $PROGRESS%"
+          --field labels="$UPDATED_LABELS"
+
    
