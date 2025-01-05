@@ -28,7 +28,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           # Extract the issue body
-          ISSUE_BODY=$(gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} --jq '.body')
+          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
           echo "Issue Body: $ISSUE_BODY"
 
           # Count tasks
