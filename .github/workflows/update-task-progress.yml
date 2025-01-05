@@ -12,12 +12,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Authentication step added to set GH_TOKEN explicitly
-      - name: Authenticate GitHub CLI
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          echo "$GH_TOKEN" | gh auth login --with-token
 
       - name: Debug environment
         run: |
