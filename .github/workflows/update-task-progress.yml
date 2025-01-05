@@ -29,44 +29,51 @@ jobs:
         run: |
           # Extract the issue body
           ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
-          # Debug log for the issue body
           echo "Issue Body: $ISSUE_BODY"
 
-          # Count total tasks (checkboxes) and completed tasks
-          TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\- \[[ x]\]' | wc -l)
-          COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\- \[x\]' | wc -l)
+          # Count tasks
+          TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[.\]' | wc -l)
+          COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[x\]' | wc -l)
 
-          # Debug log for task counts
+          # Debug logs
           echo "Total tasks: $TOTAL_TASKS"
           echo "Completed tasks: $COMPLETED_TASKS"
 
-          # Handle no tasks case
+          # Handle no tasks
           if [ "$TOTAL_TASKS" -eq 0 ]; then
             echo "No tasks found."
             echo "progress=0" >> $GITHUB_ENV
+            echo "completed=0" >> $GITHUB_ENV
+            echo "total=0" >> $GITHUB_ENV
             exit 0
           fi
 
-          # Calculate progress percentage
+          # Calculate progress
           PROGRESS=$(( COMPLETED_TASKS * 100 / TOTAL_TASKS ))
           echo "Progress: $PROGRESS%"
           echo "progress=$PROGRESS" >> $GITHUB_ENV
+          echo "completed=$COMPLETED_TASKS" >> $GITHUB_ENV
+          echo "total=$TOTAL_TASKS" >> $GITHUB_ENV
 
-      - name: Update the issue with progress
-        if: env.progress != '' # No 'env' block needed
+      - name: Update the issue title with progress
+        if: env.progress != ''
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
+          # Use calculated progress and task counts
           PROGRESS="${{ env.progress }}"
-          # Fetch the existing issue title
+          COMPLETED="${{ env.completed }}"
+          TOTAL="${{ env.total }}"
+
+          # Fetch the current issue title
           CURRENT_TITLE=$(gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} --jq '.title')
           echo "Current Title: $CURRENT_TITLE"
 
           # Remove any previous progress info from the title
-          CLEANED_TITLE=$(echo "$CURRENT_TITLE" | sed -E 's/\[[0-9]+\/[0-9]+ %\]//g' | sed 's/ *$//')
+          CLEANED_TITLE=$(echo "$CURRENT_TITLE" | sed -E 's/\[[0-9]+\/[0-9]+.*\]//g' | sed 's/ *$//')
 
-          # Append progress as [x/y Tasks] to the title
-          UPDATED_TITLE="$CLEANED_TITLE [$COMPLETED_TASKS/$TOTAL_TASKS %]"
+          # Append progress as [x/y Tasks - z%] to the title
+          UPDATED_TITLE="$CLEANED_TITLE [$COMPLETED/$TOTAL Tasks - $PROGRESS%]"
           echo "Updated Title: $UPDATED_TITLE"
 
           # Update the issue title
