@@ -14,6 +14,8 @@ jobs:
 
       - name: Calculate task progress
         id: calculate-progress
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}  # Pass the token as an environment variable
         run: |
           # Extract the issue body
           ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
