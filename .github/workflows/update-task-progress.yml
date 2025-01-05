@@ -28,7 +28,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           # Extract the issue body
-          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
+          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --json body --jq '.body')
           echo "Issue Body: $ISSUE_BODY"
 
           # Count tasks
@@ -55,38 +55,16 @@ jobs:
           echo "completed=$COMPLETED_TASKS" >> $GITHUB_ENV
           echo "total=$TOTAL_TASKS" >> $GITHUB_ENV
 
-      - name: Ensure Progress Label Exists with Desired Color
-        if: env.progress != ''
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          # Define the progress label
-          PROGRESS_LABEL="Progress: $PROGRESS%"
-          LABEL_COLOR="1E90FF" # Desired color in hexadecimal (without #)
-
-          # Check if the label exists
-          LABEL_EXISTS=$(gh label list --repo ${{ github.repository }} --jq ".[] | select(.name == \"$PROGRESS_LABEL\") | .name")
-
-          if [ -z "$LABEL_EXISTS" ]; then
-            # Create the label if it doesn't exist
-            gh label create "$PROGRESS_LABEL" --color "$LABEL_COLOR" --repo ${{ github.repository }}
-            echo "Created label '$PROGRESS_LABEL' with color '$LABEL_COLOR'."
-          else
-            # Update the label color if it exists
-            gh label edit "$PROGRESS_LABEL" --color "$LABEL_COLOR" --repo ${{ github.repository }}
-            echo "Updated label '$PROGRESS_LABEL' to color '$LABEL_COLOR'."
-          fi
-
       - name: Update the issue labels with progress
         if: env.progress != ''
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # Use calculated progress and task counts
+          # Use calculated progress
           PROGRESS="${{ env.progress }}"
 
           # Fetch current labels as an array of names
-          CURRENT_LABELS=$(gh api repos/${{github.repository}}/issues/${{github.event.issue.number}} --jq '[.labels[].name]')
+          CURRENT_LABELS=$(gh api repos/${{github.repository}}/issues/${{github.event.issue.number}} --json labels --jq '[.labels[].name]')
           echo "Current Labels: $CURRENT_LABELS"
 
           # Identify old progress labels
@@ -109,3 +87,8 @@ jobs:
           eval gh issue edit ${{github.event.issue.number}} \
             $REMOVE_LABELS_STR \
             --add-label "\"$ADD_LABEL\""
+
+      - name: Update progress label color
+        run: |
+          PROGRESS_LABEL="Progress: ${{ env.progress }}%"
+          gh label edit "$PROGRESS_LABEL" --color 1E90FF || gh label create "$PROGRESS_LABEL" --color 1E90FF
