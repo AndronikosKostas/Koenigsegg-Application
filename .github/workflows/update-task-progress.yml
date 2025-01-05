@@ -75,9 +75,17 @@ jobs:
           UPDATED_LABELS=$(echo "$FILTERED_LABELS" | jq ". += [\"Progress: $PROGRESS%\"]")
           echo "Updated Labels JSON: $UPDATED_LABELS"
 
-          # Update the labels using GitHub API
-          gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} \
-          --method PATCH \
-          --field labels[]="$UPDATED_LABELS"
+          # Extract each label as a --field argument
+          FIELDS=""
+          for label in $(echo "$UPDATED_LABELS" | jq -r '.[]'); do
+            FIELDS+="--field labels[]=\"$label\" "
+          done
 
+          # Debug fields
+          echo "Final Label Fields: $FIELDS"
+
+          # Update the labels using GitHub API
+          eval gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} \
+            --method PATCH \
+            $FIELDS
    
