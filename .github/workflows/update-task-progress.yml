@@ -74,7 +74,7 @@ jobs:
           LABEL_EXISTS=$(gh api repos/${{github.repository}}/labels --jq ".[] | select(.name == \"$ADD_LABEL\")")
           if [ -z "$LABEL_EXISTS" ]; then
             echo "Label does not exist. Creating it..."
-            gh api repos/${{github.repository}}/labels --method POST --field name="$ADD_LABEL" --field color="1E90FF"
+            gh api repos/${{github.repository}}/labels --method POST --field name="$ADD_LABEL" --field color="7057ff"
           else
             echo "Label already exists."
           fi
