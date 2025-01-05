@@ -64,28 +64,26 @@ jobs:
           PROGRESS="${{ env.progress }}"
                  
           # Fetch current labels as an array of names
-          CURRENT_LABELS=$(gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} --jq '[.labels[].name]')
+          CURRENT_LABELS=$(gh api repos/${{github.repository}}/issues/${{github.event.issue.number}} --jq '[.labels[].name]')
           echo "Current Labels: $CURRENT_LABELS"
 
-          # Remove old progress labels, if any
-          FILTERED_LABELS=$(echo "$CURRENT_LABELS" | jq '[.[] | select(test("^Progress: [0-9]+%") | not)]')
-          echo "Filtered Labels: $FILTERED_LABELS"
+          # Identify old progress labels
+          OLD_PROGRESS_LABELS=$(echo "$CURRENT_LABELS" | jq -r '.[] | select(test("^Progress: [0-9]+%$"))')
+          echo "Old Progress Labels: $OLD_PROGRESS_LABELS"
 
-          # Add the new progress label
-          UPDATED_LABELS=$(echo "$FILTERED_LABELS" | jq ". += [\"Progress: $PROGRESS%\"]")
-          echo "Updated Labels JSON: $UPDATED_LABELS"
+          # Initialize arrays for labels to remove and to add
+          REMOVE_LABELS=()
+          ADD_LABEL="Progress: $PROGRESS%"
 
-          # Extract each label as a --field argument
-          FIELDS=""
-          for label in $(echo "$UPDATED_LABELS" | jq -r '.[]'); do
-            FIELDS+="--field labels[]=\"$label\" "
-          done
+          # Populate the remove labels array
+          while IFS= read -r label; do
+            REMOVE_LABELS+=("--remove-label" "\"$label\"")
+          done <<< "$OLD_PROGRESS_LABELS"
 
-          # Debug fields
-          echo "Final Label Fields: $FIELDS"
+          # Convert arrays to strings
+          REMOVE_LABELS_STR=$(IFS=" " ; echo "${REMOVE_LABELS[*]}")
 
-          # Update the labels using GitHub API
-          eval gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} \
-            --method PATCH \
-            $FIELDS
-   
+          # Update the issue labels
+          eval gh issue edit ${{github.event.issue.number}} \
+            $REMOVE_LABELS_STR \
+            --add-label "\"$ADD_LABEL\""
