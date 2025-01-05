@@ -1,0 +1,45 @@
+name: Update Task Progress
+
+on:
+  issues:
+    types: [edited, opened]
+
+jobs:
+  update-progress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Calculate task progress
+        id: calculate-progress
+        run: |
+          # Extract the issue body
+          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
+          
+          # Count total tasks (checkboxes) and completed tasks
+          TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[.\]' | wc -l)
+          COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[x\]' | wc -l)
+          
+          if [ "$TOTAL_TASKS" -eq 0 ]; then
+            echo "No tasks found."
+            exit 0
+          fi
+
+          # Calculate progress percentage
+          PROGRESS=$(( COMPLETED_TASKS * 100 / TOTAL_TASKS ))
+
+          echo "Total tasks: $TOTAL_TASKS, Completed: $COMPLETED_TASKS, Progress: $PROGRESS%"
+          echo "::set-output name=progress::$PROGRESS"
+
+      - name: Update the issue with progress
+        if: steps.calculate-progress.outputs.progress != ''
+        run: |
+          PROGRESS="${{ steps.calculate-progress.outputs.progress }}"
+          UPDATED_BODY="$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body' | sed '/**Progress:/d')"
+          UPDATED_BODY+="\n\n**Progress:** $PROGRESS%"
+          
+          gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
+            --method PATCH \
+            --field body="$UPDATED_BODY"
