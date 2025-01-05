@@ -12,7 +12,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-
       - name: Debug environment
         run: |
           echo "Checking GH_TOKEN environment variable..."
@@ -32,17 +31,22 @@ jobs:
           ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
           # Debug log for the issue body
           echo "Issue Body: $ISSUE_BODY"
+
           # Count total tasks (checkboxes) and completed tasks
-          TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[.\]' | wc -l)
-          COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[x\]' | wc -l)
+          TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\- \[[ x]\]' | wc -l)
+          COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\- \[x\]' | wc -l)
+
           # Debug log for task counts
           echo "Total tasks: $TOTAL_TASKS"
           echo "Completed tasks: $COMPLETED_TASKS"
+
+          # Handle no tasks case
           if [ "$TOTAL_TASKS" -eq 0 ]; then
             echo "No tasks found."
             echo "progress=0" >> $GITHUB_ENV
             exit 0
           fi
+
           # Calculate progress percentage
           PROGRESS=$(( COMPLETED_TASKS * 100 / TOTAL_TASKS ))
           echo "Progress: $PROGRESS%"
@@ -55,22 +59,17 @@ jobs:
         run: |
           PROGRESS="${{ env.progress }}"
           # Fetch the existing issue title
-          CURRENT_TITLE=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.title')
+          CURRENT_TITLE=$(gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} --jq '.title')
           echo "Current Title: $CURRENT_TITLE"
 
           # Remove any previous progress info from the title
-          CLEANED_TITLE=$(echo "$CURRENT_TITLE" | sed -E 's/\[[0-9]+\/[0-9]+\]//g' | sed 's/ *$//')
-
-          # Fetch the total and completed tasks
-          TOTAL_TASKS=$(echo "$CURRENT_BODY" | grep -oE '\[.\]' | wc -l)
-          COMPLETED_TASKS=$(echo "$CURRENT_BODY" | grep -oE '\[x\]' | wc -l)
+          CLEANED_TITLE=$(echo "$CURRENT_TITLE" | sed -E 's/\[[0-9]+\/[0-9]+ %\]//g' | sed 's/ *$//')
 
           # Append progress as [x/y Tasks] to the title
           UPDATED_TITLE="$CLEANED_TITLE [$COMPLETED_TASKS/$TOTAL_TASKS %]"
           echo "Updated Title: $UPDATED_TITLE"
 
           # Update the issue title
-          gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
+          gh api repos/${{github.repository }}/issues/${{ github.event.issue.number }} \
             --method PATCH \
             --field title="$UPDATED_TITLE"
-          
