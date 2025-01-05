@@ -54,11 +54,9 @@ jobs:
           echo "::set-output name=progress::$PROGRESS"
           
            - name: Update the issue with progress
-        if: steps.calculate-progress.outputs.progress != ''
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          PROGRESS="${{ steps.calculate-progress.outputs.progress }}"
+            if: steps.calculate-progress.outputs.progress != '' # No 'env' block needed
+            run: |
+            PROGRESS="${{ steps.calculate-progress.outputs.progress }}"
 
           # Fetch the existing issue body
           CURRENT_BODY="$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')"
@@ -73,7 +71,8 @@ jobs:
           echo "Updated Issue Body:"
           echo "$UPDATED_BODY"
 
-          # Update the issue with correctly formatted body
+          # Update the issue with properly formatted body
           gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
             --method PATCH \
             --field body="$(echo -e "$UPDATED_BODY")"
+
