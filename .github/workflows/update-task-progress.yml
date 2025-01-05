@@ -62,18 +62,16 @@ jobs:
         run: |
           # Use calculated progress and task counts
           PROGRESS="${{ env.progress }}"
-          COMPLETED="${{ env.completed }}"
-          TOTAL="${{ env.total }}"
-
           # Fetch the current issue title
           CURRENT_TITLE=$(gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} --jq '.title')
           echo "Current Title: $CURRENT_TITLE"
 
+
           # Remove any previous progress info from the title
-          CLEANED_TITLE=$(echo "$CURRENT_TITLE" | sed -E 's/\[[0-9]+\/[0-9]+.*\]//g' | sed 's/ *$//')
+          CLEANED_TITLE=$(echo "$CURRENT_TITLE" | sed -E 's/\[[0-9]+%\]//g' | sed 's/ *$//')
 
           # Append progress as [x/y Tasks - z%] to the title
-          UPDATED_TITLE="$CLEANED_TITLE [$COMPLETED/$TOTAL Tasks - $PROGRESS%]"
+          UPDATED_TITLE="$CLEANED_TITLE [$PROGRESS%]"
           echo "Updated Title: $UPDATED_TITLE"
 
           # Update the issue title
