@@ -78,6 +78,6 @@ jobs:
           # Update the labels using GitHub API
           gh api repos/${{github.repository }}/issues/${{github.event.issue.number }} \
           --method PATCH \
-          --field labels="$UPDATED_LABELS"
+          --field labels[]="$UPDATED_LABELS"
 
    
