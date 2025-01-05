@@ -53,16 +53,21 @@ jobs:
           echo "Progress: $PROGRESS%"
           echo "::set-output name=progress::$PROGRESS"
 
-      - name: Update the issue with progress
+           - name: Update the issue with progress
         if: steps.calculate-progress.outputs.progress != ''
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           PROGRESS="${{ steps.calculate-progress.outputs.progress }}"
 
-          # Remove previous progress line and add the updated progress
-          UPDATED_BODY="$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body' | sed '/**Progress:/d')"
-          UPDATED_BODY+="\n\n**Progress:** $PROGRESS%"
+          # Fetch the existing issue body
+          CURRENT_BODY="$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')"
+
+          # Remove any existing progress line (if present)
+          CLEANED_BODY=$(echo "$CURRENT_BODY" | sed '/^## Progress:/d')
+
+          # Add the progress at the top with heading size ##
+          UPDATED_BODY="## Progress: $PROGRESS%\n\n$CLEANED_BODY"
 
           # Debug log for the updated issue body
           echo "Updated Issue Body: $UPDATED_BODY"
