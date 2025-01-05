@@ -12,18 +12,43 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Authenticate GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | gh auth login --with-token
+
+      - name: Debug environment
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "Checking GH_TOKEN environment variable..."
+          if [ -z "$GH_TOKEN" ]; then
+            echo "Error: GH_TOKEN is not set."
+            exit 1
+          else
+            echo "GH_TOKEN is set correctly."
+          fi
+
       - name: Calculate task progress
         id: calculate-progress
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}  # Pass the token as an environment variable
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           # Extract the issue body
           ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body')
-          
+
+          # Debug log for the issue body
+          echo "Issue Body: $ISSUE_BODY"
+
           # Count total tasks (checkboxes) and completed tasks
           TOTAL_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[.\]' | wc -l)
           COMPLETED_TASKS=$(echo "$ISSUE_BODY" | grep -oE '\[x\]' | wc -l)
-          
+
+          # Debug log for task counts
+          echo "Total tasks: $TOTAL_TASKS"
+          echo "Completed tasks: $COMPLETED_TASKS"
+
           if [ "$TOTAL_TASKS" -eq 0 ]; then
             echo "No tasks found."
             exit 0
@@ -32,16 +57,24 @@ jobs:
           # Calculate progress percentage
           PROGRESS=$(( COMPLETED_TASKS * 100 / TOTAL_TASKS ))
 
-          echo "Total tasks: $TOTAL_TASKS, Completed: $COMPLETED_TASKS, Progress: $PROGRESS%"
+          echo "Progress: $PROGRESS%"
           echo "::set-output name=progress::$PROGRESS"
 
       - name: Update the issue with progress
         if: steps.calculate-progress.outputs.progress != ''
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           PROGRESS="${{ steps.calculate-progress.outputs.progress }}"
+
+          # Remove previous progress line and add the updated progress
           UPDATED_BODY="$(gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} --jq '.body' | sed '/**Progress:/d')"
           UPDATED_BODY+="\n\n**Progress:** $PROGRESS%"
-          
+
+          # Debug log for the updated issue body
+          echo "Updated Issue Body: $UPDATED_BODY"
+
+          # Update the issue
           gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
             --method PATCH \
             --field body="$UPDATED_BODY"
